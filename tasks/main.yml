@@ -1,0 +1,461 @@
+---
+# tasks file for ansible-cis-nginx-hardening
+# 1.1.1 Ensure NGINX is installed
+- name: 1.1.1 Ensure NGINX is installed
+  block:
+    - name: 1.1.1 Ensure NGINX is installed | ppa
+      apt_repository:
+        repo: "ppa:nginx/stable"
+        codename: "trusty"
+        update_cache: yes
+        state: present
+    - name: 1.1.1 Ensure NGINX is installed | apt
+      apt:
+        name: nginx
+        state: latest
+  tags:
+    - Level_1_Webserver
+    - Level_1_Proxy
+    - Level_1_Loadbalancer
+    - Scored
+# 2.2.2 Ensure the NGINX service account is locked
+# As a defense-in-depth measure, the nginx user account should be locked to prevent logins
+# and to prevent someone from switching users to nginx using the password. In general,
+# there shouldn't be a need for anyone to have to su as nginx, and when there is a need, sudo
+# should be used instead, which would not require the nginx account password
+- name: 2.2.2 Ensure the NGINX service account is locked
+  user:
+    name: www-data
+    password_lock: yes
+  tags:
+    - Level_1_Webserver
+    - Level_1_Proxy
+    - Level_1_Loadbalancer
+    - Scored
+    - 2.2.2
+# 2.2.3 Ensure the NGINX service account has an invalid shell
+# The account used for nginx should only be used for the nginx service and does not need to
+# have the ability to log in. This prevents an attacker who compromises the account to log in
+# with it.
+- name: 2.2.3 Ensure the NGINX service account has an invalid shell
+  user:
+    name: www-data
+    shell: /sbin/nologin
+  tags:
+    - Level_1_Webserver
+    - Level_1_Proxy
+    - Level_1_Loadbalancer
+    - Scored
+    - 2.2.3
+# 2.3.1 Ensure NGINX directories and files are owned by root
+# Setting ownership to only those users in the root group and the root user will reduce the
+# likelihood of unauthorized modifications to the nginx configuration files.
+- name: 2.3.1 Ensure NGINX directories and files are owned by root
+  file:
+    path: /etc/nginx
+    owner: root
+    group: root
+    recurse: yes
+  tags:
+    - Level_1_Webserver
+    - Level_1_Proxy
+    - Level_1_Loadbalancer
+    - Scored
+    - 2.3.1
+# 2.3.2 Ensure access to NGINX directories and files is restricted
+# This ensures that only users who need access to configuration files are able to view them,
+# thus preventing unauthorized access. Other users will need to use sudo in order to access
+# these files.
+- name: 2.3.2 Ensure access to NGINX directories and files is restricted
+  block:
+    - name: 2.3.2 Ensure access to NGINX directories and files is restricted | find dir
+      find:
+        path: "/etc/nginx"
+        file_type: "directory"
+      register: nginxDir
+    - name: 2.3.2 Ensure access to NGINX directories and files is restricted | find files
+      find:
+        path: "/etc/nginx"
+        file_type: "file"
+      register: nginxFiles
+    - set_fact:
+        Dir: "{{ nginxDir.files | map(attribute='path') | list }}"
+    - set_fact:
+        Files: "{{ nginxFiles.files | map(attribute='path') | list }}"
+    - name: 2.3.2 Ensure access to NGINX directories and files is restricted | fix dir permission
+      file:
+        path: "{{item}}"
+        owner: root
+        group: root
+        mode: "0750"
+      with_items: "{{Dir}}"
+    - name: 2.3.2 Ensure access to NGINX directories and files is restricted | fix dir permission
+      file:
+        path: "{{item}}"
+        owner: root
+        group: root
+        mode: "0640"
+      with_items: "{{Files}}"
+  tags:
+    - Level_1_Webserver
+    - Level_1_Proxy
+    - Level_1_Loadbalancer
+    - Scored
+    - 2.3.2
+# 2.3.3 Ensure the NGINX process ID (PID) file is secured
+# The PID file should be owned by root and the group root. It should also be readable to
+# everyone, but only writable by root (permissions 644). This will prevent unauthorized
+# modification of the PID file, which could cause a denial of service.
+- name: 2.3.3 Ensure the NGINX process ID (PID) file is secured
+  block:
+    - name: 2.3.3 Ensure the NGINX process ID (PID) file is secured | check if exists
+      stat:
+        path: "/var/run/nginx.pid"
+      register: pidexists
+    - name: 2.3.3 Ensure the NGINX process ID (PID) file is secured
+      file:
+        path: "/var/run/nginx.pid"
+        owner: root
+        group: root
+        mode: "0644"
+      when: pidexists.stat.exists == True
+  tags:
+    - Level_1_Webserver
+    - Level_1_Proxy
+    - Level_1_Loadbalancer
+    - Scored
+    - 2.3.3
+# 2.4.3 Ensure keepalive_timeout is 10 seconds or less, but not 0
+# Persistent connections are leveraged by all modern browsers to facilitate greater web
+# performance. The keep-alive timeout limits the time a persistent connection may remain
+# open. Setting the keep-alive timeout allows this timeout to be controlled on the server side.
+- name: 2.4.3 Ensure keepalive_timeout is 10 seconds or less, but not 0
+  lineinfile:
+    dest: "/etc/nginx/nginx.conf"
+    regexp: "^\s*keepalive_timeout"
+    line: "keepalive_timeout 10;"
+    insertafter: "http {"
+    backrefs: yes
+    mode: "0640"
+    owner: "root"
+    group: "root"
+  tags:
+    - Level_1_Webserver
+    - Scored
+    - 2.4.3
+# 2.4.4 Ensure send_timeout is set to 10 seconds or less, but not 0
+# Setting the send_timeout directive on the server side helps mitigate slow HTTP denial of
+# service attacks by ensuring write operations taking up large amounts of time are closed.
+- name: 2.4.3 Ensure keepalive_timeout is 10 seconds or less, but not 0
+  lineinfile:
+    dest: "/etc/nginx/nginx.conf"
+    regexp: "^send_timeout"
+    line: "send_timeout 10;"
+    insertafter: "http {"
+    mode: "0640"
+    owner: "root"
+    group: "root"
+  tags:
+    - Level_1_Webserver
+    - Scored
+    - 2.4.4
+# 2.5.1 Ensure server_tokens directive is set to `off`
+# The server_tokens directive is responsible for displaying the NGINX version number and
+# operating system version on error pages and in the Server HTTP response header field.
+# This information should not be displayed.
+- name: 2.5.1 Ensure server_tokens directive is set to `off`
+  lineinfile:
+    dest: "/etc/nginx/nginx.conf"
+    regexp: "^\s*server_tokens"
+    line: "server_tokens off;"
+    insertafter: "http {"
+    mode: "0640"
+    owner: "root"
+    group: "root"
+  tags:
+    - Level_1_Webserver
+    - Scored
+    - 2.5.1
+# 2.5.2 Ensure default error and index.html pages do not reference NGINX
+# The default error and index.html pages for NGINX reveal that the server is NGINX. These
+# default pages should be removed or modified so they do not advertise the underlying
+# infrastructure of the server
+- name: 2.5.2 Ensure default error and index.html pages do not reference NGINX
+  block:
+    - name: 2.5.2 Ensure default error and index.html pages do not reference NGINX
+      copy:
+        src: "files/templates/index.html"
+        dest: /usr/share/nginx/html/index.html
+    - name: 2.5.2 Ensure default error and index.html pages do not reference NGINX
+      copy:
+        src: "files/templates/50x.html"
+        dest: /usr/share/nginx/html/50x.html
+  tags:
+    - Level_1_Webserver
+    - Scored
+    - 2.5.2
+# 4.1.3 Ensure private key permissions are restricted
+# Certificates and their trust chains are needed to establish the identity of a web server as
+# legitimate and trusted. Certificate authorities validate a web server's identity and that you
+# are the owner of that web server domain name.
+- name: 4.1.3 Ensure private key permissions are restricted | find config
+  block:
+    - name: 4.1.3 Ensure private key permissions are restricted | find keys
+      shell: |
+        find  {{nginx_site_config_dir}} -type f -name "*.key"
+      register: config_files
+    - name: 4.1.3 Ensure private key permissions are restricted | fix permission
+      debug:
+        msg: |-
+          Certificates and their trust chains are needed to establish the identity of a web server as
+          legitimate and trusted. Certificate authorities validate a web server's identity and that you
+          are the owner of that web server domain name.
+  tags:
+    - Level_1_Webserver
+    - Level_1_Proxy
+    - Level_1_Loadbalancer
+    - Scored
+    - 4.1.3
+# 4.1.4 Ensure only modern TLS protocols are used
+- name: 4.1.4 Ensure only modern TLS protocols are used
+  lineinfile:
+    dest: "/etc/nginx/nginx.conf"
+    regexp: '^\s*ssl_protocols'
+    line: "proxy_ssl_protocols TLSv1.2;"
+    insertafter: "http {"
+    mode: '0640'
+    owner: "root"
+    group: "root"
+# 4.1.5 Disable weak ciphers
+# 4.1.6 Ensure custom Diffie-Hellman parameters are used
+# Backward-compatible Perfect Forward Secrecy (PFS) ciphers (e.g. DHE-RSA-AES128-
+# SHA256) should use strong and unique parameters. By default, NGINX will generate 1024-
+# bit RSA keys for PFS ciphers; stronger alternatives should be used instead to provide better
+# protection for data protected by encryption.
+- name: 4.1.6 Ensure custom Diffie-Hellman parameters are used
+  block:
+    - name: 4.1.6 Ensure custom Diffie-Hellman parameters are used | ssl dir
+      file:
+        path: /etc/nginx/ssl
+        state: directory
+    - name: 4.1.6 Ensure custom Diffie-Hellman parameters are used | generate key
+      openssl_dhparam:
+        path: /etc/nginx/ssl/dhparam.pem
+        size: 2048
+        mode: 0400
+        force: True
+    - name: 4.1.7 Ensure Online Certificate Status Protocol (OCSP) stapling is enabled | ssl_stapling
+      lineinfile:
+        dest: /etc/nginx/nginx.conf
+        regexp: "ssl_dhparam "
+        line: "ssl_dhparam /etc/nginx/ssl/dhparam.pem;"
+        insertafter: "http {"
+        mode: "0640"
+        owner: "root"
+        group: "root"
+  tags:
+    - Level_1_Webserver
+    - Level_1_Proxy
+    - Level_1_Loadbalancer
+    - Scored
+    - 4.1.6
+# 4.1.7 Ensure Online Certificate Status Protocol (OCSP) stapling is enabled
+# OCSP allows a user's browser or another user agent to verify the certificate it is seeing is
+# not revoked. OCSP stapling ensures your server presents this information to the user's
+# browser in a way that best meets the performance and security needs of your website. It
+# polls the Certificate Authority's (CA) OCSP server at regular intervals to ensure it is
+# continuously kept up to date. OCSP stapling helps improve performance and security, so it
+# should be enabled.
+# 4.1.8 Ensure HTTP Strict Transport Security (HSTS) is enabled
+# HTTP Strict Transport Security (HSTS) headers instruct a user agent on how to
+# communicate with a web server. HSTS headers ensure the strict transport security policies
+# built into browsers and other user agents are informed only to communicate over HTTPS.
+# HSTS with long validity periods should be used to most effectively secure your user
+# population.
+# Strict-Transport-Security should have a long max-age, which is recommended to be at least
+# six months in length. This ensures the browser remembers your website should only be
+# accessible via HTTPS for this amount of time.
+- name: 4.1.13 Ensure session resumption is disabled to enable perfect forward security
+  lineinfile:
+    dest: "/etc/nginx/nginx.conf"
+    regexp: "^add_header Strict-Transport-Security"
+    line: 'add_header Strict-Transport-Security "max-age={{strict_transport_security_max_age}};";'
+    insertafter: "http {"
+    mode: "0640"
+    owner: "root"
+    group: "root"
+  tags:
+    - Level_1_Webserver
+    - Level_1_Proxy
+    - Level_1_Loadbalancer
+    - Scored
+# 4.1.13 Ensure session resumption is disabled to enable perfect forward security
+# Perfect forward secrecy is an encryption mechanism that enables past session keys to not
+# be compromised even if the server's private key is compromised. If an attacker recorded all
+# traffic to a server and stored it and then obtained the private key without perfect forward
+# secrecy, all communications would be compromised. With perfect forward secrecy, session
+# keys are generated using Diffie-Hellman for every session a user initiates, which isolates
+# session compromise to only that communication session. Allowing session resumption
+# breaks perfect forward secrecy; this expands the surface area for an attacker to
+# compromise past sessions and communications with a server if they are able to
+# compromise the session.
+- name: 4.1.13 Ensure session resumption is disabled to enable perfect forward security
+  lineinfile:
+    dest: "/etc/nginx/nginx.conf"
+    regexp: "^ssl_session_tickets"
+    line: "ssl_session_tickets off;"
+    insertafter: "http {"
+    mode: "0640"
+    owner: "root"
+    group: "root"
+  tags:
+    - Level_2_Webserver
+    - Level_2_Proxy
+    - Level_2_Loadbalancer
+    - Scored
+# 5.2.1 Ensure timeout values for reading the client header and body are set correctly
+# Setting the client header and body timeouts help your server mitigate possible denial of
+# service attacks. By timing out a request, the server is able to free up resources that may be
+# waiting for the body or header.
+- name: 5.2.1 Ensure timeout values for reading the client header and body are set correctly
+  block:
+    - name: 5.2.1 Ensure timeout values for reading the client header and body are set correctly | client_body_timeout
+      lineinfile:
+        dest: "/etc/nginx/nginx.conf"
+        regexp: "^client_body_timeout"
+        line: "client_body_timeout {{client_body_timeout}};"
+        insertafter: "http {"
+        mode: "0640"
+        owner: "root"
+        group: "root"
+    - name: 5.2.1 Ensure timeout values for reading the client header and body are set correctly | client_header_timeout
+      lineinfile:
+        dest: "/etc/nginx/nginx.conf"
+        regexp: "^client_header_timeout"
+        line: "client_header_timeout {{client_header_timeout}};"
+        insertafter: "http {"
+        mode: "0640"
+        owner: "root"
+        group: "root"
+  tags:
+    - Level_1_Webserver
+    - Level_1_Proxy
+    - Level_1_Loadbalancer
+    - Scored
+# 5.2.2 Ensure the maximum request body size is set correctly
+# Limiting the size of the request body helps prevent unexpectedly long or large client
+# requests from being passed to an application to perform buffer overflow attacks. This value
+# should be set low enough to protect the application but high enough not to interfere with
+# functionality and block legitimate request bodies.
+- name: 5.2.2 Ensure the maximum request body size is set correctly
+  lineinfile:
+    dest: "/etc/nginx/nginx.conf"
+    regexp: "^client_max_body_size"
+    line: "client_max_body_size {{client_max_body_size}};"
+    insertafter: "http {"
+    mode: "0640"
+    owner: "root"
+    group: "root"
+  tags:
+    - Level_1_Webserver
+    - Level_1_Proxy
+    - Level_1_Loadbalancer
+    - Scored
+# 5.2.3 Ensure the maximum buffer size for URIs is defined
+# The large_client_header_buffers directive may assist in preventing buffer overflow attacks
+# that leverage long URI query parameters.
+- name: 5.2.3 Ensure the maximum buffer size for URIs is defined
+  lineinfile:
+    dest: "/etc/nginx/nginx.conf"
+    regexp: "^large_client_header_buffers"
+    line: "large_client_header_buffers {{large_client_header_buffers}};"
+    insertafter: "http {"
+    mode: "0640"
+    owner: "root"
+    group: "root"
+  tags:
+    - Level_1_Webserver
+    - Level_1_Proxy
+    - Level_1_Loadbalancer
+    - Scored
+# 5.3.1 Ensure X-Frame-Options header is configured and enabled
+# The X-Frame-Options header should be set to allow specific websites or no sites at all to
+# embed your website as an object within their own, depending on your organizational policy
+# and application needs.
+- name: 5.3.1 Ensure X-Frame-Options header is configured and enabled
+  lineinfile:
+    dest: "/etc/nginx/nginx.conf"
+    regexp: "^add_header X-Frame-Options"
+    line: 'add_header X-Frame-Options "SAMEORIGIN";'
+    insertafter: "http {"
+    mode: "0640"
+    owner: "root"
+    group: "root"
+  tags:
+    - Level_1_Webserver
+    - Scored
+    - 5.3.2
+# 5.3.2 Ensure X-Content-Type-Options header is configured and enabled
+# The X-Content-Type-Options header should be used to force supported user agents to
+# check an HTTP response's content type header with what is expected from the destination
+# of the request.
+- name: 5.3.2 Ensure X-Content-Type-Options header is configured and enabled
+  lineinfile:
+    dest: "/etc/nginx/nginx.conf"
+    regexp: "^add_header X-Content-Type-Options"
+    line: 'add_header X-Content-Type-Options "nosniff";'
+    insertafter: "http {"
+    mode: "0640"
+    owner: "root"
+    group: "root"
+  tags:
+    - Level_1_Webserver
+    - Scored
+    - 5.3.2
+# 5.3.3 Ensure the X-XSS-Protection Header is enabled and configured properly
+# The X-Xss-Protection Header allows you to leverage browser-based protections against
+# cross-site scripting. This should be implemented on your web servers to protect your users
+# and increase user trust in your site. Your policy should be set in blocking mode when
+# possible to ensure the browser blocks a page if cross-site scripting is detected.
+- name: 5.3.3 Ensure the X-XSS-Protection Header is enabled and configured properly
+  lineinfile:
+    dest: "/etc/nginx/nginx.conf"
+    regexp: "^add_header X-Xss-Protection"
+    line: 'add_header X-Xss-Protection "1; mode=block";'
+    insertafter: "http {"
+    mode: "0640"
+    owner: "root"
+    group: "root"
+  tags:
+    - Level_1_Webserver
+    - Scored
+    - 5.3.3
+
+- name:
+    "2.5.4 Ensure the NGINX reverse proxy does not enable information disclosure\n
+    3.2 Ensure access logging is enabled\n
+    3.3 Ensure error logging is enabled and set to the info logging level\n
+    3.7 Ensure proxies pass source IP information\n
+    4.1.1 Ensure HTTP is redirected to HTTPS\n
+    4.1.10 Ensure upstream server traffic is authenticated with a client certificate\n
+    4.1.5 Disable weak ciphers\n
+    4.1.4 Ensure only modern TLS protocols are used\n
+    4.1.7 Ensure Online Certificate Status Protocol (OCSP) stapling is enabled"
+  block:
+    - name: message for you
+      debug:
+        msg: check new config file under /etc/nginx/sites-available/harden.conf and modified that file to be fit with your need
+    - name: copy nginx config to site available
+      copy:
+        src: "files/template/nodejs.conf"
+        dest: /etc/nginx/sites-available/harden.conf
+
+#3.4 Ensure log files are rotated
+- name: 3.4 Ensure log files are rotated
+  copy:
+    src: "files/templates/logroute.conf"
+    dest: /etc/logrotate.d/nginx
+  tags:
+    - Level_1_Webserver
+    - Scored
+    - 3.4.0
