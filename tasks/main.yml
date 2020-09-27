@@ -8,7 +8,6 @@
         repo: "ppa:nginx/stable"
         codename: "trusty"
         update_cache: yes
-        state: present
     - name: 1.1.1 Ensure NGINX is installed | apt
       apt:
         name: nginx
@@ -17,7 +16,7 @@
     - Level_1_Webserver
     - Level_1_Proxy
     - Level_1_Loadbalancer
-    - Scored
+    - 1.1.1
 # 2.2.2 Ensure the NGINX service account is locked
 # As a defense-in-depth measure, the nginx user account should be locked to prevent logins
 # and to prevent someone from switching users to nginx using the password. In general,
@@ -31,7 +30,6 @@
     - Level_1_Webserver
     - Level_1_Proxy
     - Level_1_Loadbalancer
-    - Scored
     - 2.2.2
 # 2.2.3 Ensure the NGINX service account has an invalid shell
 # The account used for nginx should only be used for the nginx service and does not need to
@@ -45,7 +43,6 @@
     - Level_1_Webserver
     - Level_1_Proxy
     - Level_1_Loadbalancer
-    - Scored
     - 2.2.3
 # 2.3.1 Ensure NGINX directories and files are owned by root
 # Setting ownership to only those users in the root group and the root user will reduce the
@@ -60,7 +57,6 @@
     - Level_1_Webserver
     - Level_1_Proxy
     - Level_1_Loadbalancer
-    - Scored
     - 2.3.1
 # 2.3.2 Ensure access to NGINX directories and files is restricted
 # This ensures that only users who need access to configuration files are able to view them,
@@ -100,7 +96,6 @@
     - Level_1_Webserver
     - Level_1_Proxy
     - Level_1_Loadbalancer
-    - Scored
     - 2.3.2
 # 2.3.3 Ensure the NGINX process ID (PID) file is secured
 # The PID file should be owned by root and the group root. It should also be readable to
@@ -123,7 +118,6 @@
     - Level_1_Webserver
     - Level_1_Proxy
     - Level_1_Loadbalancer
-    - Scored
     - 2.3.3
 # 2.4.3 Ensure keepalive_timeout is 10 seconds or less, but not 0
 # Persistent connections are leveraged by all modern browsers to facilitate greater web
@@ -132,7 +126,7 @@
 - name: 2.4.3 Ensure keepalive_timeout is 10 seconds or less, but not 0
   lineinfile:
     dest: "/etc/nginx/nginx.conf"
-    regexp: "^\s*keepalive_timeout"
+    regexp: "keepalive_timeout"
     line: "keepalive_timeout 10;"
     insertafter: "http {"
     backrefs: yes
@@ -141,7 +135,6 @@
     group: "root"
   tags:
     - Level_1_Webserver
-    - Scored
     - 2.4.3
 # 2.4.4 Ensure send_timeout is set to 10 seconds or less, but not 0
 # Setting the send_timeout directive on the server side helps mitigate slow HTTP denial of
@@ -157,7 +150,6 @@
     group: "root"
   tags:
     - Level_1_Webserver
-    - Scored
     - 2.4.4
 # 2.5.1 Ensure server_tokens directive is set to `off`
 # The server_tokens directive is responsible for displaying the NGINX version number and
@@ -166,7 +158,7 @@
 - name: 2.5.1 Ensure server_tokens directive is set to `off`
   lineinfile:
     dest: "/etc/nginx/nginx.conf"
-    regexp: "^\s*server_tokens"
+    regexp: "^server_tokens"
     line: "server_tokens off;"
     insertafter: "http {"
     mode: "0640"
@@ -174,7 +166,6 @@
     group: "root"
   tags:
     - Level_1_Webserver
-    - Scored
     - 2.5.1
 # 2.5.2 Ensure default error and index.html pages do not reference NGINX
 # The default error and index.html pages for NGINX reveal that the server is NGINX. These
@@ -192,7 +183,6 @@
         dest: /usr/share/nginx/html/50x.html
   tags:
     - Level_1_Webserver
-    - Scored
     - 2.5.2
 # 4.1.3 Ensure private key permissions are restricted
 # Certificates and their trust chains are needed to establish the identity of a web server as
@@ -214,18 +204,22 @@
     - Level_1_Webserver
     - Level_1_Proxy
     - Level_1_Loadbalancer
-    - Scored
     - 4.1.3
 # 4.1.4 Ensure only modern TLS protocols are used
 - name: 4.1.4 Ensure only modern TLS protocols are used
   lineinfile:
     dest: "/etc/nginx/nginx.conf"
-    regexp: '^\s*ssl_protocols'
+    regexp: "ssl_protocols"
     line: "proxy_ssl_protocols TLSv1.2;"
     insertafter: "http {"
-    mode: '0640'
+    mode: "0640"
     owner: "root"
     group: "root"
+  tags:
+    - Level_1_Webserver
+    - Level_1_Proxy
+    - Level_1_Loadbalancer
+    - 4.1.4
 # 4.1.5 Disable weak ciphers
 # 4.1.6 Ensure custom Diffie-Hellman parameters are used
 # Backward-compatible Perfect Forward Secrecy (PFS) ciphers (e.g. DHE-RSA-AES128-
@@ -257,7 +251,6 @@
     - Level_1_Webserver
     - Level_1_Proxy
     - Level_1_Loadbalancer
-    - Scored
     - 4.1.6
 # 4.1.7 Ensure Online Certificate Status Protocol (OCSP) stapling is enabled
 # OCSP allows a user's browser or another user agent to verify the certificate it is seeing is
@@ -288,7 +281,7 @@
     - Level_1_Webserver
     - Level_1_Proxy
     - Level_1_Loadbalancer
-    - Scored
+    - 4.1.13
 # 4.1.13 Ensure session resumption is disabled to enable perfect forward security
 # Perfect forward secrecy is an encryption mechanism that enables past session keys to not
 # be compromised even if the server's private key is compromised. If an attacker recorded all
@@ -312,7 +305,7 @@
     - Level_2_Webserver
     - Level_2_Proxy
     - Level_2_Loadbalancer
-    - Scored
+    - 4.1.13
 # 5.2.1 Ensure timeout values for reading the client header and body are set correctly
 # Setting the client header and body timeouts help your server mitigate possible denial of
 # service attacks. By timing out a request, the server is able to free up resources that may be
@@ -341,7 +334,7 @@
     - Level_1_Webserver
     - Level_1_Proxy
     - Level_1_Loadbalancer
-    - Scored
+    - 5.2.1
 # 5.2.2 Ensure the maximum request body size is set correctly
 # Limiting the size of the request body helps prevent unexpectedly long or large client
 # requests from being passed to an application to perform buffer overflow attacks. This value
@@ -360,7 +353,7 @@
     - Level_1_Webserver
     - Level_1_Proxy
     - Level_1_Loadbalancer
-    - Scored
+    - 5.2.2
 # 5.2.3 Ensure the maximum buffer size for URIs is defined
 # The large_client_header_buffers directive may assist in preventing buffer overflow attacks
 # that leverage long URI query parameters.
@@ -377,7 +370,7 @@
     - Level_1_Webserver
     - Level_1_Proxy
     - Level_1_Loadbalancer
-    - Scored
+    - 5.2.3
 # 5.3.1 Ensure X-Frame-Options header is configured and enabled
 # The X-Frame-Options header should be set to allow specific websites or no sites at all to
 # embed your website as an object within their own, depending on your organizational policy
@@ -393,7 +386,6 @@
     group: "root"
   tags:
     - Level_1_Webserver
-    - Scored
     - 5.3.2
 # 5.3.2 Ensure X-Content-Type-Options header is configured and enabled
 # The X-Content-Type-Options header should be used to force supported user agents to
@@ -410,7 +402,6 @@
     group: "root"
   tags:
     - Level_1_Webserver
-    - Scored
     - 5.3.2
 # 5.3.3 Ensure the X-XSS-Protection Header is enabled and configured properly
 # The X-Xss-Protection Header allows you to leverage browser-based protections against
@@ -428,7 +419,6 @@
     group: "root"
   tags:
     - Level_1_Webserver
-    - Scored
     - 5.3.3
 
 - name:
@@ -446,16 +436,17 @@
       debug:
         msg: check new config file under /etc/nginx/sites-available/harden.conf and modified that file to be fit with your need
     - name: copy nginx config to site available
-      copy:
-        src: "files/template/nodejs.conf"
+      template:
+        src: "files/templates/nodejs.conf"
         dest: /etc/nginx/sites-available/harden.conf
-
+  tags:
+    - Level_1_Webserver
+    - rest
 #3.4 Ensure log files are rotated
 - name: 3.4 Ensure log files are rotated
-  copy:
+  template:
     src: "files/templates/logroute.conf"
     dest: /etc/logrotate.d/nginx
   tags:
     - Level_1_Webserver
-    - Scored
     - 3.4.0

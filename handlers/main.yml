@@ -4,6 +4,5 @@
   service:
     name: "nginx"
     state: restarted
----
 - name: config test
   command: nginx -t

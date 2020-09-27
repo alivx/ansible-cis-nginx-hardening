@@ -1,4 +1,8 @@
-Role Name
+<div align="center">
+  <img src="https://raw.githubusercontent.com/alivx/ansible-cis-nginx-hardening/master/files/nginx.png">
+</div>
+
+Ansible CIS Nginx Hardening (still under Testing Phase)
 =========
 
 Based on CIS NGINX Benchmark v1.0.0 - 02-28-2019
@@ -7,14 +11,20 @@ Nginx is arguably one of the most widely used free and opensource web server use
 The default configurations are not secure and extra tweaks are required to fortify the web server and give it the much-needed security to prevent attacks and breaches, So this role establish secure configuration posture for NGINX running on Ubuntu
 
 
-
 ### Scoring Information
-A scoring status indicates whether compliance with the given recommendation impacts the assessed target's benchmark score. The following scoring statuses are used in this benchmark:
-#### Scored (implemented in this role)
-Failure to comply with "Scored" recommendations will decrease the final benchmark score.Compliance with "Scored" recommendations will increase the final benchmark score.
-#### Not Scored (not impliements in this role)
-Failure to comply with "Not Scored" recommendations will not decrease the final benchmark score. Compliance with "Not Scored" recommendations will not increase the final benchmark score.
+* A scoring status indicates whether compliance with the given recommendation impacts the assessed target's benchmark score. The following scoring statuses are used in this benchmark:
+### Scored (implemented in this role)
+* Failure to comply with "Scored" recommendations will decrease the final benchmark score.Compliance with "Scored" recommendations will increase the final benchmark score.
+### Not Scored (not impliements in this role)
+* Failure to comply with "Not Scored" recommendations will not decrease the final benchmark score. Compliance with "Not Scored" recommendations will not increase the final benchmark score.
 
+---
+### The main benefits of using NGINX packages from your vendor are:
+* Ease of installation
+* Dependency resolution
+* Increased effectiveness of maintenance and security patches
+* Q&A procedures carried out by your vendor
+---
 
 Requirements
 ------------
@@ -23,30 +33,60 @@ Since this role will install the latest Nginx package from the OS repositriy, ma
 
 It may work if you are already install nginx in your server.
 
-
+---
 Role Variables
 --------------
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+config as following
+```Yaml
+large_client_header_buffers: "2 1k"
+client_max_body_size: "100K"
+client_body_timeout: 10
+client_header_timeout: 10
+strict_transport_security_max_age: 15768000 #max-age directive with 15768000 seconds (six months) or longer
+nginx_site_config_dir: /etc/nginx/sites-available/
+#Or ALL:!EXP:!NULL:!ADH:!LOW:!SSLv2:!SSLv3:!MD5:!RC4;
+ssl_ciphers: ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384
 
+
+nginx_key: /etc/ssl/private/nginx-selfsigned.key
+nginx_cert: /etc/ssl/certs/nginx-selfsigned.crt
+
+backendserver: http://localhost:3000
+backendserver_ssl: True
+
+access_log: /var/log/nginx/alivx.com.access.log
+error_log: /var/log/nginx/alivx.com.error.log warn
+
+domainName: 172.16.186.129
+```
+
+----
 Dependencies
 ------------
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
 
+-
+
+---
 Example Playbook
 ----------------
 
 Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+```Yaml
+---
+- hosts: host1
+  become: yes
+  remote_user: root
+  gather_facts: no
+  roles:
+    - { role: "ansible-cis-nginx-hardening" }
 
+```
 
-
-
-
+---
+### Benchmarks
 
 * 1 Initial Setup
 * 1.1 Installation
@@ -99,12 +139,16 @@ Including an example of how to use your role (for instance, with variables passe
 * 5.3.2 Ensure X-Content-Type-Options header is configured and enabled (Scored)
 * 5.3.3 Ensure the X-XSS-Protection Header is enabled and configured properly (Scored)
 
+---
+
 License
 -------
 
-BSD
+GNU GENERAL PUBLIC LICENSE
 
 Author Information
 ------------------
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+The role was originally developed by [Ali Saleh Baker](https://www.linkedin.com/in/alivx/).
+
+When contributing to this repository, please first discuss the change you wish to make via a GitHub issue,  email, or via other channels with me :)
