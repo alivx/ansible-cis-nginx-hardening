@@ -2,7 +2,7 @@
   <img src="https://raw.githubusercontent.com/alivx/ansible-cis-nginx-hardening/master/files/nginx.png">
 </div>
 
-Ansible CIS Nginx Hardening (still under Testing Phase)
+Ansible CIS Nginx Hardening [![Build Status](https://travis-ci.org/alivx/ansible-cis-nginx-hardening.svg?branch=master)](https://travis-ci.org/alivx/ansible-cis-nginx-hardening)  (still under Testing Phase)
 =========
 
 Based on CIS NGINX Benchmark v1.0.0 - 02-28-2019
