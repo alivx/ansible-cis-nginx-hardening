@@ -14,8 +14,8 @@ The default configurations are not secure and extra tweaks are required to forti
 ### Scoring Information
 * A scoring status indicates whether compliance with the given recommendation impacts the assessed target's benchmark score. The following scoring statuses are used in this benchmark:
 ### Scored (implemented in this role)
-* Failure to comply with "Scored" recommendations will decrease the final benchmark score.Compliance with "Scored" recommendations will increase the final benchmark score.
-### Not Scored (not impliements in this role)
+* Failure to comply with "Scored" recommendations will decrease the final benchmark score. Compliance with "Scored" recommendations will increase the final benchmark score.
+### Not Scored (not implements in this role)
 * Failure to comply with "Not Scored" recommendations will not decrease the final benchmark score. Compliance with "Not Scored" recommendations will not increase the final benchmark score.
 
 ---
@@ -29,9 +29,9 @@ The default configurations are not secure and extra tweaks are required to forti
 Requirements
 ------------
 
-Since this role will install the latest Nginx package from the OS repositriy, make sure to run tihs role in fresh nginx server, this will will handle the installtion process.
+Since this role will install the latest Nginx package from the OS repository, make sure to run this role in fresh nginx server, this will handle the installation process.
 
-It may work if you are already install nginx in your server.
+It may work if you already install nginx in your server.
 
 ---
 Role Variables
@@ -95,7 +95,7 @@ Including an example of how to use your role (for instance, with variables passe
 * 2 Basic Configuration
 * 2.1 Minimize NGINX Modules
 * 2.1.2 Ensure HTTP WebDAV module is not installed (Scored)
-* 2.1.3 Ensure modules with gzip functionality are disabled (Scored)
+* 2.1.3 Ensure modules with gzip functionality is disabled (Scored)
 * 2.1.4 Ensure the autoindex module is disabled (Scored)
 * 2.2 Account Security
 * 2.2.2 Ensure the NGINX service account is locked (Scored)
