@@ -1,0 +1,23 @@
+---
+# defaults file for ansible-cis-nginx-hardening
+
+large_client_header_buffers: "2 1k"
+client_max_body_size: "100K"
+client_body_timeout: 10
+client_header_timeout: 10
+strict_transport_security_max_age: 15768000 #max-age directive with 15768000 seconds (six months) or longer
+nginx_site_config_dir: /etc/nginx/conf.d/
+#Or ALL:!EXP:!NULL:!ADH:!LOW:!SSLv2:!SSLv3:!MD5:!RC4;
+ssl_ciphers: ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384
+
+
+nginx_key: /etc/ssl/private/nginx-selfsigned.key
+nginx_cert: /etc/ssl/certs/nginx-selfsigned.crt
+
+backendserver: http://localhost:3000
+backendserver_ssl: True
+
+access_log: /var/log/nginx/networkin9.com.access.log
+error_log: /var/log/nginx/networkin9.com.error.log warn
+
+domainName: networkin9.com
