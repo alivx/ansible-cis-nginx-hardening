@@ -421,6 +421,41 @@
     - Level_1_Webserver
     - 5.3.3
 
+# 5.3.4 Ensure that Content Security Policy (CSP) is enabled and configured properly
+# Content Security Policy allows administrators to specify the locations from which allowable
+# scripts may be executed, or if scripts may be executed at all. Content Security Policy should
+# be used to improve user trust of your website.
+- name: 5.3.4 Ensure that Content Security Policy (CSP) is enabled and configured properly
+  lineinfile:
+    dest: "/etc/nginx/nginx.conf"
+    regexp: "^add_header Content-Security-Policy"
+    line: 'add_header Content-Security-Policy "default-src "self"";'
+    insertafter: "http {"
+    mode: "0640"
+    owner: "root"
+    group: "root"
+  tags:
+    - Level_1_Webserver
+    - 5.3.4
+
+# 5.3.5 Ensure the Referrer Policy is enabled and configured properly
+# When an origin site directs a user to another site, a referrer is sent that identifies the URL
+# the user came from. Depending on your site's specific use, this may present a privacy
+# concern to your users. The Referrer Policy enables organizations to define what sites
+# should see that a referral came from your site, which helps protect user privacy.
+- name: Ensure the Referrer Policy is enabled and configured properly
+  lineinfile:
+    dest: "/etc/nginx/nginx.conf"
+    regexp: "^add_header Referrer-Policy"
+    line: 'add_header Referrer-Policy "no-referrer";'
+    insertafter: "http {"
+    mode: "0640"
+    owner: "root"
+    group: "root"
+  tags:
+    - Level_1_Webserver
+    - 5.3.5
+
 - name:
     "2.5.4 Ensure the NGINX reverse proxy does not enable information disclosure\n
     3.2 Ensure access logging is enabled\n
